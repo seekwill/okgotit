@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+{% block body %}
+    <div class="container">
+      <div class="starter-template">
+        <h1 style="text-align: center">Groups</h1>
+        <p>&nbsp;</p>
+        <form class="form-inline" role="form" action="{{ url_for('addgroup') }}" method="post">
+          <div class="form-group">
+            <label class="sr-only" for="name">Name</label>
+            <input type="text" class="form-control" id="name" name="name" placeholder="Enter name">
+          </div>
+          <button type="submit" class="btn btn-default">Add Group</button>
+        </form>
+        <p>&nbsp;</p>
+        {% for group in entries %}
+        <ul class="list-group">
+          <li class="list-group-item active"><h4 style="color: white;">{{ group.name }}</h4></li>
+          {% for user in group.users %}
+          <li class="list-group-item">{{user.name}} <span style="float: right">{% if user.prevuser > 0 %}<a href="/groups/{{group.id}}/switch/{{user.id}}/{{user.prevuser}}"><span class="glyphicon glyphicon-chevron-up"></span></a>&nbsp; &nbsp; &nbsp; &nbsp; {% endif %}<a href="/users/{{user.id}}/removegroup/{{group.id}}"><span class="glyphicon glyphicon-remove"></span></a></span></li>
+          {% endfor %}
+        </ul>
+        {% if group.adduser|count > 0 %}
+        <div class="btn-group">
+          <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                Add to {{ group.name }} <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu" role="menu">
+                {% for user in group.adduser %}
+                <li><a href="/users/{{ user.id }}/addgroup/{{ group.id }}">{{ user.name }}</a></li>
+                {% endfor %}
+              </ul>
+        </div>
+        {% endif %}
+        <p>&nbsp;</p>
+        {% endfor %}
+      </div>
+    </div><!-- /.container -->
+
+{% endblock %}

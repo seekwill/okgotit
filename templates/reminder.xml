@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Gather timeout="10" numDigits="1" action="/xml/response" method="GET">
+        <Say voice="woman" >A reminder action has triggered. Press 1 to accept ticket. Press 2 to pass to the next engineer.</Say>
+    </Gather>
+    <Say>We didn't receive any input. You're crazy to pick up! Calling next engineer!</Say>
+</Response>

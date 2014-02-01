@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+{% if response == 1 %}
+    <Say voice="woman" >Thank you! This page is done.</Say>
+{% else %}
+    <Say voice="woman" >Ok, no problem. Passing to the next engineer. Bye!</Say>
+{% endif %}
+</Response>

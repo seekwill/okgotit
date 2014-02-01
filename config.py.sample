@@ -1,0 +1,8 @@
+DATABASE = "okgotit.sql3"
+ACCOUNT_SID = "A..."
+AUTH_TOKEN  = "1..."
+DEBUG = False
+
+# This is the URL that Twilio will use to contact you. 
+# Remember that this needs to be external facing.
+XMLURL = "http://example.com"
