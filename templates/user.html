@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block body %}
+    <div class="container">
+      <div class="starter-template">
+        <h2 style="text-align: center">{{userinfo.name}}<br><small>{{userinfo.mobilenum}}</small></h2>
+        {% if userinfo.callgroups|count > 0 %}
+        <h3>Call Groups</h3>
+        <ul class="list-group">
+          {% for group in userinfo.callgroups %}
+          <li class="list-group-item">{{group.name}}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </div><!-- /.container -->
+{% endblock %}

@@ -18,13 +18,12 @@
         <p>&nbsp;</p>
         <table class="table">
           <thead>
-            <tr><th>#</th><th>Name</th><th>Mobile Number</th><th>&nbsp;</th></tr>
+            <tr><th>Name</th><th>Mobile Number</th><th>&nbsp;</th></tr>
           </thead>
           <tbody>
         {% for entry in entries %}
             <tr>
-              <td>{{ entry.id }}</td>
-              <td>{{ entry.name }}</td>
+              <td><a href="/users/{{ entry.id }}">{{ entry.name }}</a></td>
               <td>{{ entry.mobilenum }}</td>
               <td><a href="/users/{{ entry.id }}/del" type="button" class="btn btn-xs btn-danger">Delete</a></td>
             </tr>

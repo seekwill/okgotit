@@ -27,13 +27,22 @@ def teardown_request(exception):
 
 @app.route("/")
 def hello():
-  return "asdf"
+  return "Private Domain"
 
 @app.route("/users")
 def users():
   cur = g.db.execute('SELECT id, name, mobilenum FROM user ORDER BY name')
   entries = [dict(id=row[0], name=row[1], mobilenum=row[2]) for row in cur.fetchall()]
   return render_template('users.html', entries=entries)
+
+@app.route("/users/<id>")
+def user(id=None):
+  cur1 = g.db.execute('SELECT id, name, mobilenum FROM user WHERE id = ?', [id] )
+  row1 = cur1.fetchall()
+  cur2 = g.db.execute('SELECT cg.id, cg.name FROM callgroup AS cg INNER JOIN grouporder AS go ON cg.id = go.groupid WHERE go.userid = ? ORDER BY cg.name', [id] )
+  callgroups = [dict(id=row2[0], name=row2[1]) for row2 in cur2.fetchall()]
+  userinfo = dict(id=row1[0][0], name=row1[0][1], mobilenum=row1[0][2], callgroups=callgroups)
+  return render_template('user.html', userinfo=userinfo)
 
 @app.route("/users/add", methods=['POST'])
 def adduser():
@@ -70,7 +79,7 @@ def groups():
     cur1 = g.db.execute('SELECT u.id, u.name FROM user AS u LEFT JOIN grouporder AS go ON u.id = go.userid AND go.groupid = ? WHERE go.id IS NULL', [id])
     adduser = [dict(id=row[0], name=row[1]) for row in cur1.fetchall()]
     cur1 = g.db.execute('SELECT u.id, u.name FROM user AS u INNER JOIN grouporder AS go ON u.id = go.userid AND go.groupid = ?', [id])
-    #users = [dict(id=row[0], name=row[1]) for row in cur1.fetchall()]
+
     users = []
     prevuser = 0
     for row in cur1.fetchall():
@@ -103,6 +112,9 @@ def smswill():
 
 @app.route("/call/<callgroup>/reminder")
 def callgroup():
+
+
+
   xmlfile = "{}/xml/reminder".format( config.XMLURL )
   call = client.calls.create(to=smsnum, from_=twilionumber, url=xmlfile)
   return 'hi'
