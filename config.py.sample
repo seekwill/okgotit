@@ -1,6 +1,8 @@
 DATABASE = "okgotit.sql3"
 ACCOUNT_SID = "A..."
 AUTH_TOKEN  = "1..."
+TWILIO_NUMBER = "+123456789"
+
 DEBUG = False
 
 # This is the URL that Twilio will use to contact you. 

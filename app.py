@@ -11,7 +11,7 @@ app.config.from_object(__name__)
 def connect_db():
   return sqlite3.connect(config.DATABASE)
 
-def twillio_client():
+def twilio_client():
   return TwilioRestClient(config.ACCOUNT_SID, config.AUTH_TOKEN)
 
 def audit(msg):
@@ -35,7 +35,7 @@ def grabgroup(id):
 @app.before_request
 def before_request():
     g.db = connect_db()
-    client = twillio_client()
+    client = twilio_client()
 
 @app.teardown_request
 def teardown_request(exception):
@@ -168,8 +168,10 @@ def groupswitchuser(id=None,pid=None,gid=None):
 
 @app.route("/sms/will")
 def smswill():
-
-  message = client.sms.messages.create(body="Reminder Action Alert! Check your email.", to=smswill, from_=twilionumber)
+  # Used to make sure everything is still working. Will delete this once
+  #  it goes live.
+  client = TwilioRestClient(config.ACCOUNT_SID, config.AUTH_TOKEN)
+  message = client.sms.messages.create(body="Reminder Action Alert! Check your email.", to="+66943285744", from_=config.TWILIO_NUMBER)
   return message.sid
 
 @app.route("/event/new/<callgroup>/<notes>")
@@ -177,14 +179,32 @@ def newticket(callgroup=None, notes=None):
 
   # Pondering the abuse of GET vs POST here...
 
+  # For new tickets, we want to be very verbose. If there are any problems
+  #  want to make it really easy to find out what steps got messed up.
+
+  audit( "Received New Event: [{}] {}".format( callgroup, notes ) )
+
   cur = g.db.execute( 'SELECT id FROM callgroup WHERE name = ?', [callgroup])
-  id = cur.fetchone()
+  gid = cur.fetchone()
+
   # Check here if callgroup exists. Otherwise barf it back to whoever called us
+  cur = g.db.execute('SELECT u.name, u.mobilenum FROM user AS u INNER JOIN smsnotify AS s ON u.id = s.userid AND s.groupid = ? AND s.typeid = 1', [gid[0]])
+  contactlist = [dict(name=row[0], number=row[1]) for row in cur.fetchall()]
 
-  g.db.execute('INSERT INTO event', [])
+  if len(contactlist) > 0:
 
-  eventlog( "New Event: [{}] {}".format( callgroup, notes ) )
+    printcontactlist = []
+    for row in contactlist:
+      printcontactlist.append( "{} ({})".format(row['name'], row['number']) )
+    audit( "We will be sending an SMS to: {}".format( ', '.join(printcontactlist) ) )
 
+    for row in contactlist:
+      body = "New Ticket: {}".format( notes )
+      # For some reason, the global scope of 'client' doesn't work.
+      # Investigate later.
+      client = TwilioRestClient(config.ACCOUNT_SID, config.AUTH_TOKEN)
+      message = client.sms.messages.create(body=body, to=row['number'], from_=config.TWILIO_NUMBER)
+      audit( "SMS Sent to: {} ({}), code: {}".format( row['name'], row['number'], message.sid ) )
 
 
   # We need to have a monitoring process keep tabs on these
@@ -194,10 +214,10 @@ def newticket(callgroup=None, notes=None):
   #  now. Buyer beware!
 
 
-
   #xmlfile = "{}/xml/reminder".format( config.XMLURL )
   #call = client.calls.create(to=smsnum, from_=twilionumber, url=xmlfile)
-  return 'hi'
+  return 'SUCCESS'
+
 
 @app.route("/xml/reminder", methods=['GET', 'POST'])
 def reminder():
