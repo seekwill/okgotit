@@ -14,7 +14,11 @@ def connect_db():
 def twillio_client():
   return TwilioRestClient(config.ACCOUNT_SID, config.AUTH_TOKEN)
 
-def logthis(msg):
+def audit(msg):
+  g.db.execute( "INSERT INTO log ( entrydate, entryip, entrylog ) VALUES ( DATETIME('now'), ?, ? )", [request.remote_addr, msg] )
+  g.db.commit()
+
+def calllog(msg):
   g.db.execute( "INSERT INTO log ( entrydate, entryip, entrylog ) VALUES ( DATETIME('now'), ?, ? )", [request.remote_addr, msg] )
   g.db.commit()
 
@@ -58,17 +62,19 @@ def users():
 @app.route("/users/<id>")
 def user(id=None):
   cur1 = g.db.execute('SELECT id, name, mobilenum FROM user WHERE id = ?', [id] )
-  row1 = cur1.fetchall()
+  userid, username, usermobile = cur1.fetchone()
   cur2 = g.db.execute('SELECT cg.id, cg.name FROM callgroup AS cg INNER JOIN grouporder AS go ON cg.id = go.groupid WHERE go.userid = ? ORDER BY cg.name', [id] )
   callgroups = [dict(id=row2[0], name=row2[1]) for row2 in cur2.fetchall()]
-  userinfo = dict(id=row1[0][0], name=row1[0][1], mobilenum=row1[0][2], callgroups=callgroups)
+  cur3 = g.db.execute('SELECT g.id, g.name, s1.id AS newevents, s2.id AS reminderevents FROM callgroup AS g LEFT JOIN smsnotify AS s1 ON g.id = s1.groupid AND s1.userid = ? AND s1.typeid = 1 LEFT JOIN smsnotify AS s2 ON g.id = s2.groupid AND s2.userid = ? AND s2.typeid = 2', [id, id] )
+  smsnotify = [dict(groupid=row3[0], groupname=row3[1], newid=row3[2], reminderid=row3[3]) for row3 in cur3.fetchall()]
+  userinfo = dict(id=userid, name=username, mobilenum=usermobile, callgroups=callgroups, smsnotify=smsnotify)
   return render_template('user.html', userinfo=userinfo)
 
 @app.route("/users/add", methods=['POST'])
 def adduser():
   g.db.execute('INSERT INTO user ( name, mobilenum ) VALUES ( ?, ? )', [request.form['name'], request.form['mobilenum']])
   g.db.commit()
-  logthis( "Added user: {} ({})".format( request.form['name'], request.form['mobilenum'] ) )
+  audit( "Added user: {} ({})".format( request.form['name'], request.form['mobilenum'] ) )
   return redirect(url_for('users'))
 
 @app.route("/users/<id>/del")
@@ -77,7 +83,7 @@ def deluser(id=None):
   g.db.execute('DELETE FROM user WHERE id = ?', [id])
   g.db.execute('DELETE FROM grouporder WHERE userid = ?', [id])
   g.db.commit()
-  logthis( "Deleted User: {} ({})".format( name, mobilenum ) )
+  audit( "Deleted User: {} ({})".format( name, mobilenum ) )
   return redirect(url_for('users'))
 
 @app.route("/users/<id>/addgroup/<gid>")
@@ -86,7 +92,7 @@ def addusertogroup(id=None,gid=None):
   g.db.commit()
   username, mobilenum = grabuser(id)
   groupname = grabgroup(gid)
-  logthis( "Added {} ({}) to {}".format( username, mobilenum, groupname ) )
+  audit( "Added {} ({}) to {}".format( username, mobilenum, groupname ) )
   return redirect(url_for('groups'))
 
 @app.route("/users/<id>/removegroup/<gid>")
@@ -95,8 +101,31 @@ def removeuserfromgroup(id=None,gid=None):
   g.db.commit()
   username, mobilenum = grabuser(id)
   groupname = grabgroup(gid)
-  logthis( "Removed {} ({}) from {}".format( username, mobilenum, groupname ) )
+  audit( "Removed {} ({}) from {}".format( username, mobilenum, groupname ) )
   return redirect(url_for('groups'))
+
+@app.route("/users/<id>/smsnotify/<action>/<type>/<gid>")
+def modifysms(id=None, type=None, action=None, gid=None):
+
+  if action == 'add':
+    if type == 'new': typeid = 1
+    if type == 'reminder': typeid = 2
+    g.db.execute("INSERT INTO smsnotify ( userid, groupid, typeid ) VALUES ( ?, ?, ? )", [id, gid, typeid])
+    g.db.commit()
+    username, mobilenum = grabuser(id)
+    groupname = grabgroup(gid)
+    audit( "SMS Notification: Added {} ({}) to {} ({})".format( username, mobilenum, groupname, type ) )
+
+  if action == 'remove':
+    if type == 'new': typeid = 1
+    if type == 'reminder': typeid = 2
+    g.db.execute("DELETE FROM smsnotify WHERE userid = ? AND groupid = ? AND typeid = ?", [id, gid, typeid])
+    g.db.commit()
+    username, mobilenum = grabuser(id)
+    groupname = grabgroup(gid)
+    audit( "SMS Notification: Removed {} ({}) from {} ({})".format( username, mobilenum, groupname, type ) )
+
+  return redirect(url_for('users')+'/'+id)
 
 @app.route("/groups")
 def groups():
@@ -121,7 +150,7 @@ def groups():
 def addgroup():
   g.db.execute('INSERT INTO callgroup ( name ) VALUES ( ? )', [request.form['name']])
   g.db.commit()
-  logthis( "Created Group: {}".format(request.form['name']) )
+  audit( "Created Group: {}".format(request.form['name']) )
   return redirect(url_for('groups'))
 
 @app.route("/groups/<gid>/switch/<id>/<pid>")
@@ -134,7 +163,7 @@ def groupswitchuser(id=None,pid=None,gid=None):
   g.db.commit()
   user1, mobilenum1 = grabuser(id)
   user2, mobilenum2 = grabuser(pid)
-  logthis( "Call Order Change: Moved {} ({}) above {} ({}) in {}".format( user1, mobilenum1, user2, mobilenum2, rows[0][2] ) )
+  audit( "Call Order Change: Moved {} ({}) above {} ({}) in {}".format( user1, mobilenum1, user2, mobilenum2, rows[0][2] ) )
   return redirect(url_for('groups'))
 
 @app.route("/sms/will")
@@ -143,13 +172,31 @@ def smswill():
   message = client.sms.messages.create(body="Reminder Action Alert! Check your email.", to=smswill, from_=twilionumber)
   return message.sid
 
-@app.route("/call/<callgroup>/reminder")
-def callgroup():
+@app.route("/event/new/<callgroup>/<notes>")
+def newticket(callgroup=None, notes=None):
+
+  # Pondering the abuse of GET vs POST here...
+
+  cur = g.db.execute( 'SELECT id FROM callgroup WHERE name = ?', [callgroup])
+  id = cur.fetchone()
+  # Check here if callgroup exists. Otherwise barf it back to whoever called us
+
+  g.db.execute('INSERT INTO event', [])
+
+  eventlog( "New Event: [{}] {}".format( callgroup, notes ) )
 
 
 
-  xmlfile = "{}/xml/reminder".format( config.XMLURL )
-  call = client.calls.create(to=smsnum, from_=twilionumber, url=xmlfile)
+  # We need to have a monitoring process keep tabs on these
+  #  calls. Doing all the call logic here has the potential
+  #  of calls falling into cracks if something didn't work.
+  # But finishing this project now is more important right
+  #  now. Buyer beware!
+
+
+
+  #xmlfile = "{}/xml/reminder".format( config.XMLURL )
+  #call = client.calls.create(to=smsnum, from_=twilionumber, url=xmlfile)
   return 'hi'
 
 @app.route("/xml/reminder", methods=['GET', 'POST'])

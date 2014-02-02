@@ -3,6 +3,45 @@
     <div class="container">
       <div class="starter-template">
         <h2 style="text-align: center">{{userinfo.name}}<br><small>{{userinfo.mobilenum}}</small></h2>
+
+        <h3>SMS Notifications</h3>
+        <table class="table">
+          <thead>
+            <tr><th>Group</th><th>New Alerts</th><th>Reminder</th></tr>
+          </thead>
+          <tbody>
+        {% for entry in userinfo.smsnotify %}
+            <tr>
+              <td>{{ entry.groupname }}</a></td>
+              <td>
+                {% if entry.newid is none %}
+                  <a href="/users/{{userinfo.id}}/smsnotify/add/new/{{entry.groupid}}">
+                  <span class="glyphicon glyphicon-star-empty"></span>
+                  </a>
+                {% else %}
+                  <a href="/users/{{userinfo.id}}/smsnotify/remove/new/{{entry.groupid}}">
+                  <span class="glyphicon glyphicon-star"></span>
+                  </a>
+                {% endif %}
+              </td>
+              <td>
+                {% if entry.reminderid is none %}
+                  <a href="/users/{{userinfo.id}}/smsnotify/add/reminder/{{entry.groupid}}">
+                  <span class="glyphicon glyphicon-star-empty"></span>
+                  </a>
+                {% else %}
+                  <a href="/users/{{userinfo.id}}/smsnotify/remove/reminder/{{entry.groupid}}">
+                  <span class="glyphicon glyphicon-star"></span>
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+        {% else %}
+          <li><em>Unbelievable.  No entries here so far</em>
+        {% endfor %}
+          </tbody>
+        </table>
+
         {% if userinfo.callgroups|count > 0 %}
         <h3>Call Groups</h3>
         <ul class="list-group">
