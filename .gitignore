@@ -37,3 +37,4 @@ nosetests.xml
 
 # Config
 config.py
+venv

@@ -9,10 +9,24 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 
 def connect_db():
-    return sqlite3.connect(config.DATABASE)
+  return sqlite3.connect(config.DATABASE)
 
 def twillio_client():
-    return TwilioRestClient(config.ACCOUNT_SID, config.AUTH_TOKEN)
+  return TwilioRestClient(config.ACCOUNT_SID, config.AUTH_TOKEN)
+
+def logthis(msg):
+  g.db.execute( "INSERT INTO log ( entrydate, entryip, entrylog ) VALUES ( DATETIME('now'), ?, ? )", [request.remote_addr, msg] )
+  g.db.commit()
+
+def grabuser(id):
+  cur = g.db.execute('SELECT name, mobilenum FROM user WHERE id = ?', [id])
+  row = cur.fetchall()
+  return ( row[0][0], row[0][1] )
+
+def grabgroup(id):
+  cur = g.db.execute('SELECT name FROM callgroup WHERE id = ?', [id])
+  row = cur.fetchall()
+  return row[0][0]
 
 @app.before_request
 def before_request():
@@ -28,6 +42,12 @@ def teardown_request(exception):
 @app.route("/")
 def hello():
   return "Private Domain"
+
+@app.route("/log")
+def logs():
+  cur = g.db.execute('SELECT entrydate, entrylog FROM log ORDER BY id DESC LIMIT 50')
+  entries = [dict(date=row[0], log=row[1]) for row in cur.fetchall()]
+  return render_template('log.html', entries=entries)
 
 @app.route("/users")
 def users():
@@ -48,25 +68,34 @@ def user(id=None):
 def adduser():
   g.db.execute('INSERT INTO user ( name, mobilenum ) VALUES ( ?, ? )', [request.form['name'], request.form['mobilenum']])
   g.db.commit()
+  logthis( "Added user: {} ({})".format( request.form['name'], request.form['mobilenum'] ) )
   return redirect(url_for('users'))
 
 @app.route("/users/<id>/del")
 def deluser(id=None):
+  name, mobilenum = grabuser(id)
   g.db.execute('DELETE FROM user WHERE id = ?', [id])
   g.db.execute('DELETE FROM grouporder WHERE userid = ?', [id])
   g.db.commit()
+  logthis( "Deleted User: {} ({})".format( name, mobilenum ) )
   return redirect(url_for('users'))
 
 @app.route("/users/<id>/addgroup/<gid>")
 def addusertogroup(id=None,gid=None):
   g.db.execute('INSERT INTO grouporder ( groupid, userid ) VALUES ( ?, ? )', [gid, id])
   g.db.commit()
+  username, mobilenum = grabuser(id)
+  groupname = grabgroup(gid)
+  logthis( "Added {} ({}) to {}".format( username, mobilenum, groupname ) )
   return redirect(url_for('groups'))
 
 @app.route("/users/<id>/removegroup/<gid>")
 def removeuserfromgroup(id=None,gid=None):
   g.db.execute('DELETE FROM grouporder WHERE groupid = ? AND userid = ?', [gid, id])
   g.db.commit()
+  username, mobilenum = grabuser(id)
+  groupname = grabgroup(gid)
+  logthis( "Removed {} ({}) from {}".format( username, mobilenum, groupname ) )
   return redirect(url_for('groups'))
 
 @app.route("/groups")
@@ -92,16 +121,20 @@ def groups():
 def addgroup():
   g.db.execute('INSERT INTO callgroup ( name ) VALUES ( ? )', [request.form['name']])
   g.db.commit()
+  logthis( "Created Group: {}".format(request.form['name']) )
   return redirect(url_for('groups'))
 
 @app.route("/groups/<gid>/switch/<id>/<pid>")
 def groupswitchuser(id=None,pid=None,gid=None):
   # Not sure I like this, but it works now...
-  cur1 = g.db.execute('SELECT userid, id FROM grouporder WHERE groupid = ? AND userid IN (?,?)', [gid, id, pid])
+  cur1 = g.db.execute('SELECT go.userid, go.id, cg.name FROM grouporder AS go INNER JOIN callgroup AS cg ON go.groupid = cg.id WHERE go.groupid = ? AND go.userid IN (?,?)', [gid, id, pid])
   rows = cur1.fetchall()
   g.db.execute('UPDATE grouporder SET userid = ? WHERE id = ?', [rows[0][0], rows[1][1]])
   g.db.execute('UPDATE grouporder SET userid = ? WHERE id = ?', [rows[1][0], rows[0][1]])
   g.db.commit()
+  user1, mobilenum1 = grabuser(id)
+  user2, mobilenum2 = grabuser(pid)
+  logthis( "Call Order Change: Moved {} ({}) above {} ({}) in {}".format( user1, mobilenum1, user2, mobilenum2, rows[0][2] ) )
   return redirect(url_for('groups'))
 
 @app.route("/sms/will")

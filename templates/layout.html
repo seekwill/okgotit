@@ -21,7 +21,7 @@ body {
 }
 .container {
   width: auto;
-  max-width: 680px;
+  max-width: 800px;
   padding: 0 15px;
 }
 .starter-template {
@@ -49,12 +49,13 @@ body {
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="#">Ok! Got it!</a>
+          <a class="navbar-brand">Ok! Got it!</a>
         </div>
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
             <li><a href="{{ url_for('users') }}">Users</a></li>
             <li><a href="{{ url_for('groups') }}">Groups</a></li>
+            <li><a href="{{ url_for('logs') }}">Logs</a></li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
