@@ -163,6 +163,8 @@ def addgroup():
 
 @app.route("/groups/<id>/del")
 def delgroup(id=None):
+  groupname = grabgroup(id)
+  audit('Deleted Group: {}'.format(groupname))
   g.db.execute('DELETE FROM callgroup WHERE id = ?', [id])
   g.db.execute('DELETE FROM grouporder WHERE groupid = ?', [id])
   g.db.execute('DELETE FROM smsnotify WHERE groupid = ?', [id])
