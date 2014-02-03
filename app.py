@@ -47,6 +47,14 @@ def teardown_request(exception):
 def hello():
   return "Private Domain"
 
+@app.route("/admin")
+def admin():
+  cur = g.db.execute('SELECT id, name FROM callgroup ORDER BY name')
+  callgroups = [dict(id=row[0], name=row[1]) for row in cur.fetchall()]
+  cur = g.db.execute('SELECT id, name, mobilenum FROM user ORDER BY name')
+  users = [dict(id=row[0], name=row[1], mobilenum=row[2]) for row in cur.fetchall()]
+  return render_template('admin.html', callgroups=callgroups, users=users)
+
 @app.route("/log")
 def logs():
   cur = g.db.execute('SELECT entrydate, entrylog FROM log ORDER BY id DESC LIMIT 50')
@@ -84,7 +92,7 @@ def deluser(id=None):
   g.db.execute('DELETE FROM grouporder WHERE userid = ?', [id])
   g.db.commit()
   audit( "Deleted User: {} ({})".format( name, mobilenum ) )
-  return redirect(url_for('users'))
+  return redirect(url_for('admin'))
 
 @app.route("/users/<id>/addgroup/<gid>")
 def addusertogroup(id=None,gid=None):
@@ -152,6 +160,14 @@ def addgroup():
   g.db.commit()
   audit( "Created Group: {}".format(request.form['name']) )
   return redirect(url_for('groups'))
+
+@app.route("/groups/<id>/del")
+def delgroup(id=None):
+  g.db.execute('DELETE FROM callgroup WHERE id = ?', [id])
+  g.db.execute('DELETE FROM grouporder WHERE groupid = ?', [id])
+  g.db.execute('DELETE FROM smsnotify WHERE groupid = ?', [id])
+  g.db.commit()
+  return redirect(url_for('admin'))
 
 @app.route("/groups/<gid>/switch/<id>/<pid>")
 def groupswitchuser(id=None,pid=None,gid=None):

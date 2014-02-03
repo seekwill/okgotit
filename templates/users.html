@@ -18,17 +18,14 @@
         <p>&nbsp;</p>
         <table class="table">
           <thead>
-            <tr><th>Name</th><th>Mobile Number</th><th>&nbsp;</th></tr>
+            <tr><th>Name</th><th>Mobile Number</th></tr>
           </thead>
           <tbody>
         {% for entry in entries %}
             <tr>
               <td><a href="/users/{{ entry.id }}">{{ entry.name }}</a></td>
               <td>{{ entry.mobilenum }}</td>
-              <td><a href="/users/{{ entry.id }}/del" type="button" class="btn btn-xs btn-danger">Delete</a></td>
             </tr>
-        {% else %}
-          <li><em>Unbelievable.  No entries here so far</em>
         {% endfor %}
           </tbody>
         </table>
