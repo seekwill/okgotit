@@ -184,12 +184,16 @@ def groupswitchuser(id=None,pid=None,gid=None):
   audit( "Call Order Change: Moved {} ({}) above {} ({}) in {}".format( user1, mobilenum1, user2, mobilenum2, rows[0][2] ) )
   return redirect(url_for('groups'))
 
-@app.route("/sms/will")
-def smswill():
-  # Used to make sure everything is still working. Will delete this once
-  #  it goes live.
+@app.route("/test/sms")
+def testsms():
   client = TwilioRestClient(config.ACCOUNT_SID, config.AUTH_TOKEN)
-  message = client.sms.messages.create(body="Reminder Action Alert! Check your email.", to="+66943285744", from_=config.TWILIO_NUMBER)
+  message = client.sms.messages.create(body="Reminder Action Alert! Check your email.", to=config.TEST_NUMBER, from_=config.TWILIO_NUMBER)
+  return message.sid
+
+@app.route("/test/call")
+def testcall():
+  client = TwilioRestClient(config.ACCOUNT_SID, config.AUTH_TOKEN)
+  # ...
   return message.sid
 
 @app.route("/event/new/<callgroup>/<notes>")
