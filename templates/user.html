@@ -22,22 +22,22 @@
               <td>{{ entry.groupname }}</a></td>
               <td>
                 {% if entry.newid is none %}
-                  <a href="/users/{{userinfo.id}}/smsnotify/add/new/{{entry.groupid}}">
+                  <a href="{{ url_for('modifysms', id=userinfo.id, action='add', type='new', gid=entry.groupid ) }}">
                   <span class="glyphicon glyphicon-star-empty"></span>
                   </a>
                 {% else %}
-                  <a href="/users/{{userinfo.id}}/smsnotify/remove/new/{{entry.groupid}}">
+                  <a href="{{ url_for('modifysms', id=userinfo.id, action='remove', type='new', gid=entry.groupid ) }}">
                   <span class="glyphicon glyphicon-star"></span>
                   </a>
                 {% endif %}
               </td>
               <td>
                 {% if entry.reminderid is none %}
-                  <a href="/users/{{userinfo.id}}/smsnotify/add/reminder/{{entry.groupid}}">
+                  <a href="{{ url_for('modifysms', id=userinfo.id, action='add', type='reminder', gid=entry.groupid ) }}">
                   <span class="glyphicon glyphicon-star-empty"></span>
                   </a>
                 {% else %}
-                  <a href="/users/{{userinfo.id}}/smsnotify/remove/reminder/{{entry.groupid}}">
+                  <a href="{{ url_for('modifysms', id=userinfo.id, action='remove', type='reminder', gid=entry.groupid ) }}">
                   <span class="glyphicon glyphicon-star"></span>
                   </a>
                 {% endif %}
@@ -50,7 +50,7 @@
         </table>
 
         {% if userinfo.callgroups|count > 0 %}
-        <h3>Call Groups</h3>
+        <h3>Phone Notifications</h3>
         <ul class="list-group">
           {% for group in userinfo.callgroups %}
           <li class="list-group-item">{{group.name}}</li>
