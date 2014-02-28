@@ -264,6 +264,15 @@ def newticket(id=None):
   return 'SUCCESS'
 
 
+@app.route("/event/<id>/assigned", methods=['POST'])
+def assignedticket(id=None):
+
+  # The code here will eventually be used to turn off reminders/calls
+
+  audit( "Ticket #{} has been assigned".format( id ) )
+  return 'SUCCESS'
+
+
 @app.route("/xml/reminder", methods=['GET', 'POST'])
 def reminder():
   return render_template('reminder.xml')
