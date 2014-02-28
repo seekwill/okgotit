@@ -190,21 +190,32 @@ def testsms():
   message = client.sms.messages.create(body="Reminder Action Alert! Check your email.", to=config.TEST_NUMBER, from_=config.TWILIO_NUMBER)
   return message.sid
 
+@app.route("/test/postsms/<id>", methods=['POST'])
+def testpostsms(id=None):
+  message = "Ticket: {} Notes: {}".format(id, request.form['notes'])
+  client = TwilioRestClient(config.ACCOUNT_SID, config.AUTH_TOKEN)
+  message = client.sms.messages.create(body=message, to=config.TEST_NUMBER, from_=config.TWILIO_NUMBER)
+  return message.sid
+
+
 @app.route("/test/call")
 def testcall():
   client = TwilioRestClient(config.ACCOUNT_SID, config.AUTH_TOKEN)
   # ...
   return message.sid
 
-@app.route("/event/new/<callgroup>/<notes>")
-def newticket(callgroup=None, notes=None):
+@app.route("/event/<id>/new", methods=['POST'])
+def newticket(id=None):
 
   # Pondering the abuse of GET vs POST here...
 
   # For new tickets, we want to be very verbose. If there are any problems
   #  want to make it really easy to find out what steps got messed up.
 
-  audit( "Received New Event: [{}] {}".format( callgroup, notes ) )
+  callgroup = request.form['callgroup']
+  message = request.form['message']
+
+  audit( "Received New Event: [{}] #{} {}".format( callgroup, id, message ) )
 
   cur = g.db.execute( 'SELECT id FROM callgroup WHERE name = ?', [callgroup])
   gid = cur.fetchone()
@@ -221,7 +232,7 @@ def newticket(callgroup=None, notes=None):
     audit( "We will be sending an SMS to: {}".format( ', '.join(printcontactlist) ) )
 
     for row in contactlist:
-      body = "New Ticket: {}".format( notes )
+      body = "New Ticket: {}".format( message )
       # For some reason, the global scope of 'client' doesn't work.
       # Investigate later.
       client = TwilioRestClient(config.ACCOUNT_SID, config.AUTH_TOKEN)
