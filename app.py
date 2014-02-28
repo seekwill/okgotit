@@ -83,7 +83,7 @@ def adduser():
   g.db.execute('INSERT INTO user ( name, mobilenum ) VALUES ( ?, ? )', [request.form['name'], request.form['mobilenum']])
   g.db.commit()
   audit( "Added user: {} ({})".format( request.form['name'], request.form['mobilenum'] ) )
-  return redirect(url_for('users'))
+  return redirect(url_for('admin'))
 
 @app.route("/users/<id>/del")
 def deluser(id=None):
@@ -159,7 +159,7 @@ def addgroup():
   g.db.execute('INSERT INTO callgroup ( name ) VALUES ( ? )', [request.form['name']])
   g.db.commit()
   audit( "Created Group: {}".format(request.form['name']) )
-  return redirect(url_for('groups'))
+  return redirect(url_for('admin'))
 
 @app.route("/groups/<id>/del")
 def delgroup(id=None):

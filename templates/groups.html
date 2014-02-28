@@ -4,14 +4,6 @@
       <div class="starter-template">
         <h1 style="text-align: center">Groups</h1>
         <p>&nbsp;</p>
-        <form class="form-inline" role="form" action="{{ url_for('addgroup') }}" method="post">
-          <div class="form-group">
-            <label class="sr-only" for="name">Name</label>
-            <input type="text" class="form-control" id="name" name="name" placeholder="Enter name">
-          </div>
-          <button type="submit" class="btn btn-default">Add Group</button>
-        </form>
-        <p>&nbsp;</p>
         {% for group in entries %}
         <h3>{{ group.name }}</h3>
         <ul class="list-group">

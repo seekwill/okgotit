@@ -5,6 +5,19 @@
         <h1 style="text-align: center">Admin</h1>
         <p>&nbsp;</p>
         <h2>Users</h2>
+        <p>&nbsp;</p>
+        <form class="form-inline" role="form" action="{{ url_for('adduser') }}" method="post">
+          <div class="form-group">
+            <label class="sr-only" for="name">Name</label>
+            <input type="text" class="form-control" id="name" name="name" placeholder="Enter name">
+          </div>
+          <div class="form-group">
+            <label class="sr-only" for="mobilenum">Mobile Number</label>
+            <input type="text" class="form-control" id="mobilenum" name="mobilenum" placeholder="+1243456789">
+          </div>
+          <button type="submit" class="btn btn-default">Add User</button>
+        </form>
+        <p>&nbsp;</p>
         <table class="table">
           <thead>
             <tr><th>Name</th><th>Mobile Number</th><th>&nbsp;</th></tr>
@@ -21,6 +34,15 @@
         </table>
         <p>&nbsp;</p>
         <h2>Call Groups</h2>
+        <p>&nbsp;</p>
+        <form class="form-inline" role="form" action="{{ url_for('addgroup') }}" method="post">
+          <div class="form-group">
+            <label class="sr-only" for="name">Name</label>
+            <input type="text" class="form-control" id="name" name="name" placeholder="Enter name">
+          </div>
+          <button type="submit" class="btn btn-default">Add Group</button>
+        </form>
+        <p>&nbsp;</p>
         <table class="table">
           <thead>
             <tr><th>Name</th><th>&nbsp;</th></tr>
