@@ -5,6 +5,13 @@
         <h2 style="text-align: center">{{userinfo.name}}<br><small>{{userinfo.mobilenum}}</small></h2>
 
         <h3>SMS Notifications</h3>
+        <form class="form-inline" role="form" action="{{ url_for('testsmsuser', id=userinfo.id) }}" method="post">
+          <div class="form-group">
+            <label class="sr-only" for="message">Message</label>
+            <input type="text" class="form-control" id="message" name="message" placeholder="Message">
+          </div>
+          <button type="submit" class="btn btn-default">Send Test Message</button>
+        </form>
         <table class="table">
           <thead>
             <tr><th>Group</th><th>New Alerts</th><th>Reminder</th></tr>

@@ -184,11 +184,23 @@ def groupswitchuser(id=None,pid=None,gid=None):
   audit( "Call Order Change: Moved {} ({}) above {} ({}) in {}".format( user1, mobilenum1, user2, mobilenum2, rows[0][2] ) )
   return redirect(url_for('groups'))
 
+
 @app.route("/test/sms")
 def testsms():
   client = TwilioRestClient(config.ACCOUNT_SID, config.AUTH_TOKEN)
   message = client.sms.messages.create(body="Reminder Action Alert! Check your email.", to=config.TEST_NUMBER, from_=config.TWILIO_NUMBER)
   return message.sid
+
+
+@app.route("/test/sms/<id>", methods=['POST'])
+def testsmsuser(id=None):
+  client = TwilioRestClient(config.ACCOUNT_SID, config.AUTH_TOKEN)
+  user, mobilenum = grabuser(id)
+  audit( "Test SMS Request- To: {} ({}) Message: {}".format( user, mobilenum, request.form['message']))
+  message = client.sms.messages.create(body=request.form['message'], to=mobilenum, from_=config.TWILIO_NUMBER)
+  audit( "Test SMS Result: {}".format( message.sid ) )
+  return redirect(url_for('user', id=id))
+
 
 @app.route("/test/postsms/<id>", methods=['POST'])
 def testpostsms(id=None):
