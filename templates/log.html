@@ -3,18 +3,11 @@
     <div class="container">
       <div class="starter-template">
         <h2 style="text-align: center">History Log</h2>
-
-        <table class="table">
-          <thead>
-            <tr><th>Entry Date</th><th>Log Entry</th></tr>
-          </thead>
-          <tbody>
-        {% for entry in entries %}
-            <tr><td>{{ entry.date }}</td><td>{{ entry.log }}</td></tr>
-        {% endfor %}
-          </tbody>
-        </table>
-
+        <ul class="list-unstyled">
+          {% for entry in entries %}
+          <li>{{ entry.date }} - {{ entry.log }}</li>
+          {% endfor %}
+        </ul>
       </div>
     </div><!-- /.container -->
 {% endblock %}
