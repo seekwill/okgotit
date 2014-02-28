@@ -39,6 +39,11 @@ def grabgroup(id):
   return row[0][0]
 
 
+def log404():
+  g.db.execute( "INSERT INTO log404 ( entrydate, entryip, url ) VALUES ( DATETIME('now'), ?, ? )", [request.remote_addr, request.url] )
+  g.db.commit()
+
+
 @app.before_request
 def before_request():
     g.db = connect_db()
@@ -302,6 +307,12 @@ def reminder():
 def response():
   response = int(request.args.get('Digits', ''))
   return render_template('response.xml', response=response)
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+  log404()
+  return 'Not here', 404
 
 
 if __name__ == "__main__":
