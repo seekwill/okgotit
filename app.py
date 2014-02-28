@@ -8,34 +8,42 @@ from contextlib import closing
 app = Flask(__name__)
 app.config.from_object(__name__)
 
+
 def connect_db():
   return sqlite3.connect(config.DATABASE)
 
+
 def twilio_client():
   return TwilioRestClient(config.ACCOUNT_SID, config.AUTH_TOKEN)
+
 
 def audit(msg):
   g.db.execute( "INSERT INTO log ( entrydate, entryip, entrylog ) VALUES ( DATETIME('now'), ?, ? )", [request.remote_addr, msg] )
   g.db.commit()
 
+
 def calllog(msg):
   g.db.execute( "INSERT INTO log ( entrydate, entryip, entrylog ) VALUES ( DATETIME('now'), ?, ? )", [request.remote_addr, msg] )
   g.db.commit()
+
 
 def grabuser(id):
   cur = g.db.execute('SELECT name, mobilenum FROM user WHERE id = ?', [id])
   row = cur.fetchall()
   return ( row[0][0], row[0][1] )
 
+
 def grabgroup(id):
   cur = g.db.execute('SELECT name FROM callgroup WHERE id = ?', [id])
   row = cur.fetchall()
   return row[0][0]
 
+
 @app.before_request
 def before_request():
     g.db = connect_db()
     client = twilio_client()
+
 
 @app.teardown_request
 def teardown_request(exception):
@@ -43,9 +51,11 @@ def teardown_request(exception):
     if db is not None:
         db.close()
 
+
 @app.route("/")
 def hello():
   return "Private Domain"
+
 
 @app.route("/admin")
 def admin():
@@ -55,17 +65,20 @@ def admin():
   users = [dict(id=row[0], name=row[1], mobilenum=row[2]) for row in cur.fetchall()]
   return render_template('admin.html', callgroups=callgroups, users=users)
 
+
 @app.route("/log")
 def logs():
   cur = g.db.execute('SELECT entrydate, entrylog FROM log ORDER BY id DESC LIMIT 50')
   entries = [dict(date=row[0], log=row[1]) for row in cur.fetchall()]
   return render_template('log.html', entries=entries)
 
+
 @app.route("/users")
 def users():
   cur = g.db.execute('SELECT id, name, mobilenum FROM user ORDER BY name')
   entries = [dict(id=row[0], name=row[1], mobilenum=row[2]) for row in cur.fetchall()]
   return render_template('users.html', entries=entries)
+
 
 @app.route("/users/<id>")
 def user(id=None):
@@ -78,12 +91,14 @@ def user(id=None):
   userinfo = dict(id=userid, name=username, mobilenum=usermobile, callgroups=callgroups, smsnotify=smsnotify)
   return render_template('user.html', userinfo=userinfo)
 
+
 @app.route("/users/add", methods=['POST'])
 def adduser():
   g.db.execute('INSERT INTO user ( name, mobilenum ) VALUES ( ?, ? )', [request.form['name'], request.form['mobilenum']])
   g.db.commit()
   audit( "Added user: {} ({})".format( request.form['name'], request.form['mobilenum'] ) )
   return redirect(url_for('admin'))
+
 
 @app.route("/users/<id>/del")
 def deluser(id=None):
@@ -94,6 +109,7 @@ def deluser(id=None):
   audit( "Deleted User: {} ({})".format( name, mobilenum ) )
   return redirect(url_for('admin'))
 
+
 @app.route("/users/<id>/addgroup/<gid>")
 def addusertogroup(id=None,gid=None):
   g.db.execute('INSERT INTO grouporder ( groupid, userid ) VALUES ( ?, ? )', [gid, id])
@@ -103,6 +119,7 @@ def addusertogroup(id=None,gid=None):
   audit( "Added {} ({}) to {}".format( username, mobilenum, groupname ) )
   return redirect(url_for('groups'))
 
+
 @app.route("/users/<id>/removegroup/<gid>")
 def removeuserfromgroup(id=None,gid=None):
   g.db.execute('DELETE FROM grouporder WHERE groupid = ? AND userid = ?', [gid, id])
@@ -111,6 +128,7 @@ def removeuserfromgroup(id=None,gid=None):
   groupname = grabgroup(gid)
   audit( "Removed {} ({}) from {}".format( username, mobilenum, groupname ) )
   return redirect(url_for('groups'))
+
 
 @app.route("/users/<id>/smsnotify/<action>/<type>/<gid>")
 def modifysms(id=None, type=None, action=None, gid=None):
@@ -135,6 +153,7 @@ def modifysms(id=None, type=None, action=None, gid=None):
 
   return redirect(url_for('users')+'/'+id)
 
+
 @app.route("/groups")
 def groups():
   cur = g.db.execute('SELECT id, name FROM callgroup ORDER BY name')
@@ -145,7 +164,6 @@ def groups():
     cur1 = g.db.execute('SELECT u.id, u.name FROM user AS u LEFT JOIN grouporder AS go ON u.id = go.userid AND go.groupid = ? WHERE go.id IS NULL', [id])
     adduser = [dict(id=row[0], name=row[1]) for row in cur1.fetchall()]
     cur1 = g.db.execute('SELECT u.id, u.name FROM user AS u INNER JOIN grouporder AS go ON u.id = go.userid AND go.groupid = ?', [id])
-
     users = []
     prevuser = 0
     for row in cur1.fetchall():
@@ -154,12 +172,14 @@ def groups():
     entries.append(dict(id=id,name=name,adduser=adduser,users=users))
   return render_template('groups.html',  entries=entries)
 
+
 @app.route("/groups/add", methods=['POST'])
 def addgroup():
   g.db.execute('INSERT INTO callgroup ( name ) VALUES ( ? )', [request.form['name']])
   g.db.commit()
   audit( "Created Group: {}".format(request.form['name']) )
   return redirect(url_for('admin'))
+
 
 @app.route("/groups/<id>/del")
 def delgroup(id=None):
@@ -170,6 +190,7 @@ def delgroup(id=None):
   g.db.execute('DELETE FROM smsnotify WHERE groupid = ?', [id])
   g.db.commit()
   return redirect(url_for('admin'))
+
 
 @app.route("/groups/<gid>/switch/<id>/<pid>")
 def groupswitchuser(id=None,pid=None,gid=None):
@@ -216,6 +237,7 @@ def testcall():
   # ...
   return message.sid
 
+
 @app.route("/event/<id>/new", methods=['POST'])
 def newticket(id=None):
 
@@ -251,13 +273,11 @@ def newticket(id=None):
       message = client.sms.messages.create(body=body, to=row['number'], from_=config.TWILIO_NUMBER)
       audit( "SMS Sent to: {} ({}), code: {}".format( row['name'], row['number'], message.sid ) )
 
-
   # We need to have a monitoring process keep tabs on these
   #  calls. Doing all the call logic here has the potential
   #  of calls falling into cracks if something didn't work.
   # But finishing this project now is more important right
   #  now. Buyer beware!
-
 
   #xmlfile = "{}/xml/reminder".format( config.XMLURL )
   #call = client.calls.create(to=smsnum, from_=twilionumber, url=xmlfile)
@@ -277,10 +297,12 @@ def assignedticket(id=None):
 def reminder():
   return render_template('reminder.xml')
 
+
 @app.route("/xml/response", methods=['GET', 'POST'])
 def response():
   response = int(request.args.get('Digits', ''))
   return render_template('response.xml', response=response)
+
 
 if __name__ == "__main__":
     app.debug = config.DEBUG
