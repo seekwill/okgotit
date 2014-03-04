@@ -172,7 +172,7 @@ def addnotification(id=None, device=None, type=None, gid=None):
   groupname = grabgroup(gid)
   audit( "Notification Added: {} ({}) to {} ({})".format( username, mobilenum, groupname, typemsg ) )
 
-  return redirect(url_for('users')+'/'+id)
+  return redirect(url_for('user', id=id))
 
 @app.route("/users/<id>/removenotify/<notifyid>")
 def removenotification(id=None, notifyid=None):
@@ -192,7 +192,7 @@ def removenotification(id=None, notifyid=None):
   groupname = grabgroup(gid)
   audit( "Notification: Removed {} ({}) from {} ({})".format( username, mobilenum, groupname, typemsg ) )
 
-  return redirect(url_for('users')+'/'+id)
+  return redirect(url_for('user', id=id))
 
 
 @app.route("/groups")

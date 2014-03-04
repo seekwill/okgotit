@@ -25,9 +25,9 @@
           <tbody>
         {% for entry in users %}
             <tr>
-              <td><a href="/users/{{ entry.id }}">{{ entry.name }}</a></td>
+              <td><a href="{{ url_for('user', id=entry.id) }}">{{ entry.name }}</a></td>
               <td>{{ entry.mobilenum }}</td>
-              <td><a href="/users/{{ entry.id }}/del" type="button" class="btn btn-xs btn-danger">Delete</a></td>
+              <td><a href="{{ url_for('deluser', id=entry.id) }}" type="button" class="btn btn-xs btn-danger">Delete</a></td>
             </tr>
         {% endfor %}
           </tbody>
@@ -51,7 +51,7 @@
         {% for entry in callgroups %}
             <tr>
               <td>{{ entry.name }}</td>
-              <td><a href="/groups/{{ entry.id }}/del" type="button" class="btn btn-xs btn-danger">Delete</a></td>
+              <td><a href="{{ url_for('delgroup', id=entry.id) }}" type="button" class="btn btn-xs btn-danger">Delete</a></td>
             </tr>
         {% endfor %}
           </tbody>

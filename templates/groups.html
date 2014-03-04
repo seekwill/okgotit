@@ -8,7 +8,7 @@
         <h3>{{ group.name }}</h3>
         <ul class="list-group">
           {% for user in group.users %}
-          <li class="list-group-item">{{user.name}} <span style="float: right">{% if user.prevuser > 0 %}<a href="/groups/{{group.id}}/switch/{{user.id}}/{{user.prevuser}}"><span class="glyphicon glyphicon-chevron-up"></span></a>&nbsp; &nbsp; &nbsp; &nbsp; {% endif %}<a href="/users/{{user.id}}/removegroup/{{group.id}}"><span class="glyphicon glyphicon-remove"></span></a></span></li>
+          <li class="list-group-item">{{user.name}} <span style="float: right">{% if user.prevuser > 0 %}<a href="{{ url_for('groupswitchuser', gid=group.id, id=user.id, pid=user.prevuser) }}"><span class="glyphicon glyphicon-chevron-up"></span></a>&nbsp; &nbsp; &nbsp; &nbsp; {% endif %}<a href="{{ url_for('removeuserfromgroup', id=user.id, gid=group.id) }}"><span class="glyphicon glyphicon-remove"></span></a></span></li>
           {% endfor %}
         </ul>
         {% if group.adduser|count > 0 %}
@@ -18,7 +18,7 @@
               </button>
               <ul class="dropdown-menu" role="menu">
                 {% for user in group.adduser %}
-                <li><a href="/users/{{ user.id }}/addgroup/{{ group.id }}">{{ user.name }}</a></li>
+                <li><a href="{{ url_for('addusertogroup', id=user.id, gid=group.id) }}">{{ user.name }}</a></li>
                 {% endfor %}
               </ul>
         </div>

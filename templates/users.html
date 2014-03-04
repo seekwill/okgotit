@@ -10,7 +10,7 @@
           <tbody>
         {% for entry in entries %}
             <tr>
-              <td><a href="/users/{{ entry.id }}">{{ entry.name }}</a></td>
+              <td><a href="{{ url_for('user', id=entry.id) }}">{{ entry.name }}</a></td>
               <td>{{ entry.mobilenum }}</td>
             </tr>
         {% endfor %}
