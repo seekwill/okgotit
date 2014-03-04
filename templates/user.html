@@ -4,40 +4,56 @@
       <div class="starter-template">
         <h2 style="text-align: center">{{userinfo.name}}<br><small>{{userinfo.mobilenum}}</small></h2>
 
-        <h3>SMS Notifications</h3>
-        <form class="form-inline" role="form" action="{{ url_for('testsmsuser', id=userinfo.id) }}" method="post">
-          <div class="form-group">
-            <label class="sr-only" for="message">Message</label>
-            <input type="text" class="form-control" id="message" name="message" placeholder="Message">
-          </div>
-          <button type="submit" class="btn btn-default">Send Test Message</button>
-        </form>
+        <h3>Notifications</h3>
+
         <table class="table">
           <thead>
-            <tr><th>Group</th><th>New Alerts</th><th>Reminder</th></tr>
+            <tr><th>Group</th><th>SMS New Alerts</th><th>SMS Reminder</th><th>Phone New Alerts</th><th>Phone Reminder</th></tr>
           </thead>
           <tbody>
-        {% for entry in userinfo.smsnotify %}
+        {% for entry in userinfo.notificationlist %}
             <tr>
               <td>{{ entry.groupname }}</a></td>
               <td>
-                {% if entry.newid is none %}
-                  <a href="{{ url_for('modifysms', id=userinfo.id, action='add', type='new', gid=entry.groupid ) }}">
+                {% if entry.sms_new is none %}
+                  <a href="{{ url_for('addnotification', id=userinfo.id, device='SMS', type='New', gid=entry.groupid ) }}">
                   <span class="glyphicon glyphicon-star-empty"></span>
                   </a>
                 {% else %}
-                  <a href="{{ url_for('modifysms', id=userinfo.id, action='remove', type='new', gid=entry.groupid ) }}">
+                  <a href="{{ url_for('removenotification', id=userinfo.id, notifyid=entry.sms_new ) }}">
                   <span class="glyphicon glyphicon-star"></span>
                   </a>
                 {% endif %}
               </td>
               <td>
-                {% if entry.reminderid is none %}
-                  <a href="{{ url_for('modifysms', id=userinfo.id, action='add', type='reminder', gid=entry.groupid ) }}">
+                {% if entry.sms_rem is none %}
+                  <a href="{{ url_for('addnotification', id=userinfo.id, device='SMS', type='Reminder', gid=entry.groupid ) }}">
                   <span class="glyphicon glyphicon-star-empty"></span>
                   </a>
                 {% else %}
-                  <a href="{{ url_for('modifysms', id=userinfo.id, action='remove', type='reminder', gid=entry.groupid ) }}">
+                  <a href="{{ url_for('removenotification', id=userinfo.id, notifyid=entry.sms_rem ) }}">
+                  <span class="glyphicon glyphicon-star"></span>
+                  </a>
+                {% endif %}
+              </td>
+              <td>
+                {% if entry.phone_new is none %}
+                  <a href="{{ url_for('addnotification', id=userinfo.id, device='Phone', type='New', gid=entry.groupid ) }}">
+                  <span class="glyphicon glyphicon-star-empty"></span>
+                  </a>
+                {% else %}
+                  <a href="{{ url_for('removenotification', id=userinfo.id, notifyid=entry.phone_new ) }}">
+                  <span class="glyphicon glyphicon-star"></span>
+                  </a>
+                {% endif %}
+              </td>
+              <td>
+                {% if entry.phone_rem is none %}
+                  <a href="{{ url_for('addnotification', id=userinfo.id, device='Phone', type='Reminder', gid=entry.groupid ) }}">
+                  <span class="glyphicon glyphicon-star-empty"></span>
+                  </a>
+                {% else %}
+                  <a href="{{ url_for('removenotification', id=userinfo.id, notifyid=entry.phone_rem ) }}">
                   <span class="glyphicon glyphicon-star"></span>
                   </a>
                 {% endif %}
@@ -49,14 +65,14 @@
           </tbody>
         </table>
 
-        {% if userinfo.callgroups|count > 0 %}
-        <h3>Phone Notifications</h3>
-        <ul class="list-group">
-          {% for group in userinfo.callgroups %}
-          <li class="list-group-item">{{group.name}}</li>
-          {% endfor %}
-        </ul>
-        {% endif %}
+        <form class="form-inline" role="form" action="{{ url_for('testsmsuser', id=userinfo.id) }}" method="post">
+          <div class="form-group">
+            <label class="sr-only" for="message">Message</label>
+            <input type="text" class="form-control" id="message" name="message" placeholder="Message">
+          </div>
+          <button type="submit" class="btn btn-default">Send Test Message</button>
+        </form>
+
       </div>
     </div><!-- /.container -->
 {% endblock %}

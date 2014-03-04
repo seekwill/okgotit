@@ -87,13 +87,28 @@ def users():
 
 @app.route("/users/<id>")
 def user(id=None):
-  cur1 = g.db.execute('SELECT id, name, mobilenum FROM user WHERE id = ?', [id] )
-  userid, username, usermobile = cur1.fetchone()
-  cur2 = g.db.execute('SELECT cg.id, cg.name FROM callgroup AS cg INNER JOIN grouporder AS go ON cg.id = go.groupid WHERE go.userid = ? ORDER BY cg.name', [id] )
-  callgroups = [dict(id=row2[0], name=row2[1]) for row2 in cur2.fetchall()]
-  cur3 = g.db.execute('SELECT g.id, g.name, s1.id AS newevents, s2.id AS reminderevents FROM callgroup AS g LEFT JOIN smsnotify AS s1 ON g.id = s1.groupid AND s1.userid = ? AND s1.typeid = 1 LEFT JOIN smsnotify AS s2 ON g.id = s2.groupid AND s2.userid = ? AND s2.typeid = 2', [id, id] )
-  smsnotify = [dict(groupid=row3[0], groupname=row3[1], newid=row3[2], reminderid=row3[3]) for row3 in cur3.fetchall()]
-  userinfo = dict(id=userid, name=username, mobilenum=usermobile, callgroups=callgroups, smsnotify=smsnotify)
+  username, usermobile = grabuser(id)
+  cur3 = g.db.execute('''SELECT
+      g.id,
+      g.name,
+      n1.id AS sms_new,
+      n2.id AS sms_rem,
+      n3.id AS phone_new,
+      n4.id AS phone_rem
+    FROM
+      callgroup AS g
+      LEFT JOIN notification AS n1
+        ON g.id = n1.groupid AND n1.userid = ? AND n1.typeid = 1
+      LEFT JOIN notification AS n2
+        ON g.id = n2.groupid AND n2.userid = ? AND n2.typeid = 2
+      LEFT JOIN notification AS n3
+        ON g.id = n3.groupid AND n3.userid = ? AND n3.typeid = 3
+      LEFT JOIN notification AS n4
+        ON g.id = n4.groupid AND n4.userid = ? AND n4.typeid = 4
+      ORDER BY g.name
+    ''', [id, id, id, id] )
+  notificationlist = [dict(groupid=row3[0], groupname=row3[1], sms_new=row3[2], sms_rem=row3[3], phone_new=row3[4], phone_rem=row3[5], ) for row3 in cur3.fetchall()]
+  userinfo = dict(id=id, name=username, mobilenum=usermobile, notificationlist=notificationlist)
   return render_template('user.html', userinfo=userinfo)
 
 
@@ -135,26 +150,47 @@ def removeuserfromgroup(id=None,gid=None):
   return redirect(url_for('groups'))
 
 
-@app.route("/users/<id>/smsnotify/<action>/<type>/<gid>")
-def modifysms(id=None, type=None, action=None, gid=None):
+@app.route("/users/<id>/addnotification/<device>/<type>/<gid>")
+def addnotification(id=None, device=None, type=None, gid=None):
 
-  if action == 'add':
-    if type == 'new': typeid = 1
-    if type == 'reminder': typeid = 2
-    g.db.execute("INSERT INTO smsnotify ( userid, groupid, typeid ) VALUES ( ?, ?, ? )", [id, gid, typeid])
-    g.db.commit()
-    username, mobilenum = grabuser(id)
-    groupname = grabgroup(gid)
-    audit( "SMS Notification: Added {} ({}) to {} ({})".format( username, mobilenum, groupname, type ) )
+  if type == 'New' and device == 'SMS':
+    typeid = 1
+    typemsg = 'SMS New Alert'
+  if type == 'Reminder' and device == 'SMS':
+    typeid = 2
+    typemsg = 'SMS Reminder Alert'
+  if type == 'New' and device == 'Phone':
+    typeid = 3
+    typemsg = 'Phone New Alert'
+  if type == 'Reminder' and device == 'Phone':
+    typeid = 4
+    typemsg = 'Phone Reminder Alert'
 
-  if action == 'remove':
-    if type == 'new': typeid = 1
-    if type == 'reminder': typeid = 2
-    g.db.execute("DELETE FROM smsnotify WHERE userid = ? AND groupid = ? AND typeid = ?", [id, gid, typeid])
-    g.db.commit()
-    username, mobilenum = grabuser(id)
-    groupname = grabgroup(gid)
-    audit( "SMS Notification: Removed {} ({}) from {} ({})".format( username, mobilenum, groupname, type ) )
+  g.db.execute("INSERT INTO notification ( userid, groupid, typeid ) VALUES ( ?, ?, ? )", [id, gid, typeid])
+  g.db.commit()
+  username, mobilenum = grabuser(id)
+  groupname = grabgroup(gid)
+  audit( "Notification Added: {} ({}) to {} ({})".format( username, mobilenum, groupname, typemsg ) )
+
+  return redirect(url_for('users')+'/'+id)
+
+@app.route("/users/<id>/removenotify/<notifyid>")
+def removenotification(id=None, notifyid=None):
+  # If only the DELETE had RETURNING...
+  # This needs to be cleaned up... fail for coding at 3AM on a plane!
+  cur = g.db.execute("SELECT groupid, typeid FROM notification WHERE id = ?", [notifyid])
+  row = cur.fetchall()
+  gid, type = row[0]
+  if type == 1: typemsg = 'SMS New Alert'
+  if type == 2: typemsg = 'SMS Reminder Alert'
+  if type == 3: typemsg = 'Phone New Alert'
+  if type == 4: typemsg = 'Phone Reminder Alert'
+
+  g.db.execute("DELETE FROM notification WHERE userid = ? AND id = ?", [id, notifyid])
+  g.db.commit()
+  username, mobilenum = grabuser(id)
+  groupname = grabgroup(gid)
+  audit( "Notification: Removed {} ({}) from {} ({})".format( username, mobilenum, groupname, typemsg ) )
 
   return redirect(url_for('users')+'/'+id)
 
@@ -192,7 +228,7 @@ def delgroup(id=None):
   audit('Deleted Group: {}'.format(groupname))
   g.db.execute('DELETE FROM callgroup WHERE id = ?', [id])
   g.db.execute('DELETE FROM grouporder WHERE groupid = ?', [id])
-  g.db.execute('DELETE FROM smsnotify WHERE groupid = ?', [id])
+  g.db.execute('DELETE FROM notification WHERE groupid = ?', [id])
   g.db.commit()
   return redirect(url_for('admin'))
 
@@ -260,7 +296,7 @@ def newticket(id=None):
   gid = cur.fetchone()
 
   # Check here if callgroup exists. Otherwise barf it back to whoever called us
-  cur = g.db.execute('SELECT u.name, u.mobilenum FROM user AS u INNER JOIN smsnotify AS s ON u.id = s.userid AND s.groupid = ? AND s.typeid = 1', [gid[0]])
+  cur = g.db.execute('SELECT u.name, u.mobilenum FROM user AS u INNER JOIN notification AS s ON u.id = s.userid AND s.groupid = ? AND s.typeid = 1', [gid[0]])
   contactlist = [dict(name=row[0], number=row[1]) for row in cur.fetchall()]
 
   if len(contactlist) > 0:
