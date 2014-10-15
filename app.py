@@ -311,8 +311,8 @@ def newticket(id=None):
       # For some reason, the global scope of 'client' doesn't work.
       # Investigate later.
       client = TwilioRestClient(config.ACCOUNT_SID, config.AUTH_TOKEN)
-      message = client.sms.messages.create(body=body, to=row['number'], from_=config.TWILIO_NUMBER)
-      audit( "SMS Sent to: {} ({}), code: {}".format( row['name'], row['number'], message.sid ) )
+      smstext = client.sms.messages.create(body=body, to=row['number'], from_=config.TWILIO_NUMBER)
+      audit( "SMS Sent to: {} ({}), code: {}".format( row['name'], row['number'], smstext.sid ) )
 
   # We need to have a monitoring process keep tabs on these
   #  calls. Doing all the call logic here has the potential
